@@ -28,8 +28,15 @@ else
     action="D"
 fi
 
-# get container ip by container name
-container_ip=`docker inspect -f '{{.NetworkSettings.IPAddress}}' $container_name 2> /dev/null`
+container_network=`docker inspect -f {{.HostConfig.NetworkMode}} $container_name 2> /dev/null`
+if [ "$container_network"x == "default"x ];then
+    # get container ip by container name
+    container_ip=`docker inspect -f {{.NetworkSettings.IPAddress}} $container_name 2> /dev/null`
+else
+    # get container ip by container name
+    container_ip=`docker inspect -f {{.NetworkSettings.Networks.$container_network.IPAddress}} $container_name 2> /dev/null`
+fi
+
 if [ -z $container_ip ];then
     echo "[ERROR] Get container's (${container_name}) IP error, please ensure you have this container"
     exit 2
