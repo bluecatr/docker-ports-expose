@@ -6,9 +6,11 @@ if [ `id -u` -ne 0 ];then
     exit 23
 fi
 
-if [ $# -ne 2 ];then
-    echo "Usage: $0 <container_name|container_id> <add|del|ls> [<host_port>:]<container_port>[/<protocol_type>]"
-    exit 1
+if [ $# -ne 3 ];then
+  if [ $# -ne 2 ];then
+      echo "Usage: $0 <container_name|container_id> <add|del|ls> [<host_port>:]<container_port>[/<protocol_type>]"
+      exit 1
+  fi
 fi
 
 IPV4_RE='(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])'
