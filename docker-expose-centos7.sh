@@ -6,8 +6,8 @@ if [ `id -u` -ne 0 ];then
     exit 23
 fi
 
-if [ $# -ne 3 ];then
-    echo "Usage: $0 <container_name> <add|del> [<host_port>:]<container_port>[/<protocol_type>]"
+if [ $# -ne 2 ];then
+    echo "Usage: $0 <container_name|container_id> <add|del|ls> [<host_port>:]<container_port>[/<protocol_type>]"
     exit 1
 fi
 
@@ -18,18 +18,12 @@ action=$2
 arguments=$3
 
 # check action
-if [ "$action"x != "add"x -a "$action"x != "del"x ];then
-    echo "[ERROR] Please use add or del parameter to add port map or delete port map"
+if [ "$action"x != "add"x -a "$action"x != "del"x -a "$action"x != "ls"x ];then
+    echo "[ERROR] Please use add, del or ls parameter to add port map or delete port map or list rules"
     exit 654
-fi
-if [ "$action"x == "add"x ];then
-    action="A"
-else
-    action="D"
 fi
 
 container_network=`docker inspect -f {{.HostConfig.NetworkMode}} $container_name 2> /dev/null`
-echo "[INFO] Container network: $container_network"
 if [ "$container_network"x == "default"x ];then
     # get container ip by container name
     container_ip=`docker inspect -f {{.NetworkSettings.IPAddress}} $container_name 2> /dev/null`
@@ -44,7 +38,22 @@ if [ -z $container_ip ];then
     echo "[ERROR] Get container's (${container_name}) IP error, please ensure you have this container"
     exit 2
 fi
-echo "[INFO] Container IP: $container_ip and Gateway IP: $container_gateway_ip"
+echo "[INFO] Container network: $container_network, Container IP: $container_ip and Gateway IP: $container_gateway_ip"
+
+if [ "$action"x == "add"x ];then
+    action="A"
+else
+  if [ "$action"x == "del"x ];then
+      action="D"
+  else
+    echo "[INFO] Current NAT rules: "
+    iptables -t nat -S DOCKER | grep $container_ip
+    iptables -t nat -S POSTROUTING | grep $container_ip
+    echo "[INFO] Current FILTER rules: "
+    iptables -t filter -S DOCKER | grep $container_ip
+    exit 0
+  fi
+fi
 
 # parse arguments
 protocol_type=`echo $arguments | awk -F '/' '{print $2}'`
